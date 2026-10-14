@@ -1,0 +1,7 @@
+import test from'node:test';import assert from'node:assert/strict';import{parseBulk,freshCard,grade,normalizeBackup,shuffle}from'../public/core.mjs';
+test('Bulk accepts TSV and delimiter with optional hint',()=>{const p=parseBulk('Q1\tA1\tH1\r\nQ2 || A2\n\n');assert.equal(p.rows.length,2);assert.equal(p.rows[0].hint,'H1');assert.deepEqual(p.errors,[]);});
+test('Bulk reports invalid lines without silent import',()=>assert.deepEqual(parseBulk('q ||\nvalid || answer\nbad').errors,[1,3]));
+test('Review schedules grow and wrong response resets streak',()=>{let c=freshCard({q:'q',a:'a'});for(const days of[1,3,7,14,30,60,60]){c=grade(c,true,100);assert.equal(c.due,100+days*86400000);}c=grade(c,false,100);assert.equal(c.streak,0);assert.equal(c.due,600100);assert.equal(c.seen,8);assert.equal(c.wrong,1);assert.equal(c.lastWrong,true);});
+test('Backup uses fresh IDs and preserves valid progress',()=>{const c={...freshCard({q:'Q',a:'A'}),streak:2,star:true};const ds=normalizeBackup({version:1,decks:[{name:'deck',cards:[c]}]});assert.notEqual(ds[0].cards[0].id,c.id);assert.equal(ds[0].cards[0].streak,2);assert.equal(ds[0].cards[0].star,true);});
+test('Invalid backup rejected before merge',()=>{assert.throws(()=>normalizeBackup({version:2,decks:[]}));assert.throws(()=>normalizeBackup({version:1,decks:[{name:'x',cards:[{q:'',a:'x'}]}]}));});
+test('Shuffle preserves all entries and does not mutate input',()=>{const a=[1,2,3,4],b=shuffle(a);assert.deepEqual([...b].sort(),a);assert.notEqual(a,b);});
